@@ -1,0 +1,311 @@
+ <!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>GeoCalc GH</title>
+
+    <!-- Leaflet Map -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet/dist/leaflet.css"
+    />
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        .title-box {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .title-box h1 {
+            margin: 0;
+            color: #3b5bdb;
+            font-size: 38px;
+        }
+
+        .title-box p {
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .section-title {
+            color: #3b5bdb;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .row div {
+            flex: 1;
+        }
+
+        button {
+            background: #3b5bdb;
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 10px;
+            font-size: 17px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #2848c7;
+        }
+
+        .result-box {
+            background: #eef3ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 18px;
+            color: #222;
+        }
+
+        #map {
+            height: 400px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .formula {
+            background: #f0f4ff;
+            padding: 15px;
+            border-left: 5px solid #3b5bdb;
+            border-radius: 8px;
+            margin-top: 15px;
+            color: #444;
+            font-size: 17px;
+        }
+
+        @media(max-width: 700px) {
+
+            .row {
+                flex-direction: column;
+            }
+
+            .title-box h1 {
+                font-size: 30px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- TITLE -->
+    <div class="title-box">
+
+        <h1>GeoProj Ghana</h1>
+
+        <p>Coordinate Projection & Transformation System</p>
+
+    </div>
+
+    <!-- INPUT CARD -->
+    <div class="card">
+
+        <div class="section-title">
+            Coordinate Transformation
+        </div>
+
+        <form method="POST">
+
+            <!-- Conversion -->
+            <label>Transformation Mode</label>
+
+            <select name="conversion">
+
+                <option>WGS84 to Ghana National Grid</option>
+
+                <option>WGS84 to Ghana Metre Grid</option>
+
+                <option>Ghana National Grid to Ghana Metre Grid</option>
+
+                <option>Ghana Metre Grid to Ghana National Grid</option>
+
+            </select>
+
+            <!-- Ellipsoid -->
+            <label>Reference Ellipsoid</label>
+
+            <select name="ellipsoid">
+
+                <option>WGS84</option>
+
+                <option>Clarke 1880</option>
+
+                <option>International 1924</option>
+
+            </select>
+
+            <!-- Inputs -->
+            <div class="row">
+
+                <div>
+
+                    <label>Latitude / Easting</label>
+
+                    <input
+                        type="text"
+                        name="value1"
+                        placeholder="Enter value"
+                        required
+                    >
+
+                </div>
+
+                <div>
+
+                    <label>Longitude / Northing</label>
+
+                    <input
+                        type="text"
+                        name="value2"
+                        placeholder="Enter value"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+            <!-- Height -->
+            <label>Ellipsoidal Height (m)</label>
+
+            <input
+                type="text"
+                name="height"
+                placeholder="Optional height"
+            >
+
+            <!-- Formula -->
+            <div class="formula">
+
+                X = (N+h)cosφcosλ &nbsp;&nbsp;&nbsp;
+
+                Y = (N+h)cosφsinλ &nbsp;&nbsp;&nbsp;
+
+                Z = [(1-e²)N+h]sinφ
+
+            </div>
+
+            <br>
+
+            <button type="submit">
+                Convert Coordinates
+            </button>
+
+        </form>
+
+        <!-- Result -->
+        {% if result %}
+
+        <div class="result-box">
+
+            {{ result }}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+    <!-- MAP -->
+    <div class="card">
+
+        <div class="section-title">
+            Map Preview
+        </div>
+
+        <div id="map"></div>
+
+    </div>
+
+</div>
+
+<!-- LEAFLET -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+    // Default Ghana map
+    var map = L.map('map').setView([7.9465, -1.0232], 6);
+
+    // OpenStreetMap
+    L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+            attribution: '© OpenStreetMap contributors'
+        }
+    ).addTo(map);
+
+    // Coordinates from Flask
+    var lat = {{ lat|tojson }};
+    var lon = {{ lon|tojson }};
+
+    // Add marker if coordinates exist
+    if (lat !== null && lon !== null) {
+
+        map.setView([lat, lon], 13);
+
+        L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup("Selected Location")
+            .openPopup();
+    }
+
+</script>
+
+</body>
+</html>
